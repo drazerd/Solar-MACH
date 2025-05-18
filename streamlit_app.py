@@ -444,8 +444,8 @@ if len(body_list) == len(vsw_list):
     # Button to generate gif
     if st.button(f'Generate animated .gif', help='This may take a while, please be patient. The gif is generated on the server and may take a while to download.'):    
         today = datetime.date.today()
-        if today - datetime.timedelta(days=num_days-1) <= st.session_state.date_input <= today:
-            st.warning(f'''⚠️ **WARNING:** Your chosen date must be {num_days} days. If you want to generate a gif for a different time period, please change the date in the sidebar!''')
+        if today - datetime.timedelta(days=num_days) <= st.session_state.date_input <= today:
+            st.warning(f'''⚠️ **WARNING:** Your chosen date must be {num_days} days before today. If you want to generate a gif for a different time period, please change the date in the sidebar!''')
         else:
             data = generate_solarmach_gif(body_list, vsw_list, sdate, stime, num_days)
 
