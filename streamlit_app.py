@@ -1,4 +1,5 @@
 import datetime
+import imageio
 import io
 import os
 import pyshorteners
@@ -18,6 +19,58 @@ def delete_from_state(vars):
     for var in vars:
         if var in st.session_state:
             del st.session_state[var]
+
+
+def generate_solarmach_gif(body_list, vsw_list, start_date, start_time, number_files):
+    from datetime import datetime, timedelta
+    plot_spirals = st.session_state.def_plot_spirals
+    plot_sun_body_line = st.session_state.def_plot_sun_body_line
+    transparent = st.session_state.def_transparent
+    markers = 'numbers'
+    output_files = []
+
+    # Normalize start_date safely
+    try:
+        current_datetime = datetime.strptime(start_date + ' ' + start_time, '%Y-%m-%d %H:%M:%S')
+    except ValueError:
+        # Try non-zero-padded version (e.g. '2022-6-1')
+        # Normalize start_date manually to zero-padded format
+        
+        y = start_date[0:4]
+        m = start_date[4:6]
+        d = start_date[6:8]
+        start_date_padded = f"{y}-{m}-{d}"
+
+        start_time_formatted = f"{start_time[:2]}:{start_time[2:4]}"
+
+        current_datetime = datetime.strptime(start_date_padded + ' ' + start_time_formatted, '%Y-%m-%d %H:%M')
+    # If the date is not in the correct format, handle it here
+    # Now current_datetime is safe to use
+    with plt.ioff():
+        for i in range(number_files):
+            date_str = current_datetime.strftime('%Y-%m-%d %H:%M:%S')      # for SolarMACH
+            date_for_filename = current_datetime.strftime('%Y-%m-%d')      # for filenames
+            filename = f'animate_{date_for_filename}_{i+1}.png'
+
+            sm7 = SolarMACH(date=date_str, body_list=body_list, vsw_list=vsw_list, coord_sys=coord_sys)
+            sm7.plot(
+                plot_spirals=plot_spirals,
+                plot_sun_body_line=plot_sun_body_line,
+                transparent=transparent,
+                markers=markers,
+                outfile=filename
+            )
+
+            plt.close('all')
+            output_files.append(filename)
+            current_datetime += timedelta(days=1)
+
+    images_data = [imageio.v2.imread(f) for f in sorted(output_files)]
+
+    gif_bytes = io.BytesIO()
+    imageio.mimwrite(gif_bytes, images_data, format='.gif', duration=100, loop=0)
+    gif_bytes.seek(0)
+    return gif_bytes
 
 
 # modify hamburger menu
@@ -372,11 +425,37 @@ if len(body_list) == len(vsw_list):
         data=plot2.getvalue(),
         file_name=filename+'.png',
         mime="image/png")
-
+    
     # download plot, alternative. produces actual png image on server.
     # needs # outfile=filename+'.png' uncommented above
     # with open(filename+'.png', 'rb') as f:
     #     st.download_button('Download figure as .png file', f, file_name=filename+'.png', mime="image/png")
+
+    st.markdown('###### Download animated .gif of the plots:')
+    # Slider for number of days
+    num_days = st.slider(
+        label='Select number of days to generate animated.gif for',
+        min_value=1,
+        max_value=100,
+        value=10,
+        help='Choose how many days ahead you want the gif to be generated for.'
+    )
+
+    # Button to generate gif
+    if st.button(f'Generate animated .gif', help='This may take a while, please be patient. The gif is generated on the server and may take a while to download.'):    
+        today = datetime.date.today()
+        if today - datetime.timedelta(days=num_days-1) <= st.session_state.date_input <= today:
+            st.warning(f'''⚠️ **WARNING:** Your chosen date must be {num_days} days. If you want to generate a gif for a different time period, please change the date in the sidebar!''')
+        else:
+            data = generate_solarmach_gif(body_list, vsw_list, sdate, stime, num_days)
+
+            st.download_button(
+                label=f"Download gif for {num_days} days",
+                data=data,
+                file_name="solarmach.gif",
+                mime="image/gif",
+                help="This may take a while, please be patient. The gif is generated on the server and may take a while to download."
+        )
 
     st.success('''
            📄 **Citation:** Please cite the following paper if you use Solar-MACH in your publication.
