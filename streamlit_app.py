@@ -47,7 +47,7 @@ def generate_solarmach_gif(body_list, vsw_list, start_date, start_time, number_f
             date_str = current_datetime.strftime('%Y-%m-%d %H:%M:%S')
             filename = f"animate_{current_datetime.strftime('%Y%m%d')}_{i:02d}.png"
 
-            sm7 = SolarMACH(date=date_str, body_list=body_list, vsw_list=vsw_list, coord_sys=coord_sys)
+            sm7 = SolarMACH(date=date_str, body_list=body_list, vsw_list=vsw_list, coord_sys='Stoneyhurst')
             sm7.plot(
                 plot_spirals=plot_spirals,
                 plot_sun_body_line=plot_sun_body_line,
