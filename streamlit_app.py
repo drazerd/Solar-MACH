@@ -47,7 +47,7 @@ def generate_solarmach_gif(body_list, vsw_list, start_date, start_time, number_f
             date_str = current_datetime.strftime('%Y-%m-%d %H:%M:%S')
             filename = f"animate_{current_datetime.strftime('%Y%m%d')}_{i:02d}.png"
 
-            sm7 = SolarMACH(date=date_str, body_list=body_list, vsw_list=vsw_list, coord_sys='Stoneyhurst')
+            sm7 = SolarMACH(date=date_str, body_list=body_list, vsw_list=vsw_list, coord_sys=coord_sys)
             sm7.plot(
                 plot_spirals=plot_spirals,
                 plot_sun_body_line=plot_sun_body_line,
@@ -443,20 +443,28 @@ if len(body_list) == len(vsw_list):
     )
 
     # Button to generate gif
-    if st.button(f'Generate animated .gif', help='This may take a while, please be patient. The gif is generated on the server and may take a while to download.'):
-        today = datetime.date.today()
+    if st.button("Generate animated .gif", help="This may take a while. The gif is generated on the server and may take time to download."):
 
-        if today - datetime.timedelta(days=num_days) <= st.session_state.date_input <= today:
-            st.warning(f'''⚠️ **WARNING:** Your chosen date must be {num_days} days before today. If you want to generate a gif for a different time period, please change the date in the sidebar!''')
+        # Check if the selected date is too recent
+        if datetime.date.today() - datetime.timedelta(days=num_days) <= st.session_state.date_input <= datetime.date.today():
+            st.warning(
+                f"⚠️ **Invalid date range:** Please select a date earlier than {num_days} days ago "
+                f"to generate the full animation. You can adjust the date in the sidebar."
+            )
         else:
-            data = generate_solarmach_gif(body_list, vsw_list, sdate, stime, num_days)
-            # ✅ Offer optional download button
+            with st.spinner("Generating animated GIF... please be patient ⏳"):
+                gif_data = generate_solarmach_gif(
+                    body_list, vsw_list, sdate, stime, num_days
+                )
+
+            st.success("✅ GIF generation complete! Click on the button below to download")
+
             st.download_button(
-                label=f"Download gif for {num_days} days",
-                data=data,
+                label=f"⬇️ Download {num_days}-day GIF",
+                data=gif_data,
                 file_name="solarmach.gif",
                 mime="image/gif",
-                help="This may take a while, please be patient. The gif is generated on the server and may take a while to download."
+                help="Download the generated animation."
             )
 
 
